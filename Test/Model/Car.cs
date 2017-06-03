@@ -13,7 +13,10 @@ namespace Test.Model
         public string LastEnterDate { get; set; }
         public string LastEnterTime { get; set; }
         public string Status { get; set; }
+        public string CMToken { get; set; }
         public Dictionary<string, object> timestamp { get; set;  }
+
+        public Car() { }
         //public string LastExitDate { get; set; }
         //public string LastExitTime { get; set; }
 

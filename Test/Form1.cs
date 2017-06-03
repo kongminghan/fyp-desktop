@@ -1,7 +1,6 @@
 ﻿using Emgu.CV;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -28,6 +27,12 @@ using Google.Apis.Vision.v1;
 using Google.Apis.Http;
 using Google.Apis.Services;
 using Google.Apis.Vision.v1.Data;
+using System.Net;
+using Newtonsoft.Json;
+using FireSharp.Config;
+using FireSharp.Interfaces;
+using FireSharp;
+using FireSharp.Response;
 
 namespace Test
 {
@@ -40,7 +45,6 @@ namespace Test
         private BackgroundSubtractor _forgroundDetector;
         bool ready = true;
         bool found = false;
-        Task myTask;
         GoogleCredential credentails;
         VisionService service;
 
@@ -55,8 +59,6 @@ namespace Test
             credentails = CreateCredentials("service_account.json");
             service = CreateService("Park", credentails);
 
-            myTask = Task.Run(() =>{});
-
             try
             {
                 _capture = new VideoCapture();
@@ -67,6 +69,7 @@ namespace Test
             }
 
             _frame = new Mat();
+
             if (_capture != null && _capture.Ptr != IntPtr.Zero)
             {
                 _motionHistory = new MotionHistory(
@@ -79,8 +82,11 @@ namespace Test
                 _capture.SetCaptureProperty(CapProp.Fps, 30);
                 _capture.Start();
             }
-        }
 
+            //string deviceId = "fFTds19dqH8:APA91bGgmxIH3P_Y5np3RY-lSz71nwJ0aOgty0iyrj3p3pUI1F9q6z6iVd8FxRQu6faVd5ws7Vw7OaibvkNA1qaZZAKumlvy1Kb-lYmuowEHQGP0XiYLcEXqpdfhX-XZ3SQ_-dNeGorc";
+            //SendPushNotification(deviceId);
+            //StoreDBAsync("", "");
+        }
 
         private Mat _segMask = new Mat();
         private Mat _forgroundMask = new Mat();
@@ -379,7 +385,7 @@ namespace Test
             }
             var readyTask = Task.Run(async() =>
             {
-                await Task.Delay(3800);
+                await Task.Delay(3500);
                 ready = true;
                 //_capture.Start();
             });
@@ -394,6 +400,20 @@ namespace Test
 
         private async void StoreDBAsync(string @image, string plate)
         {
+            //Int64 startAt = GetTimestamp(DateTime.Today.AddDays(-1));
+            //Int64 endAt = GetTimestamp(DateTime.Now);
+
+            //var firebase = new FirebaseClient("https://park-e5cd7.firebaseio.com/");
+
+            //var statCar = await firebase
+            //    .Child("statCar")
+            //    .OrderBy("timestamp")
+            //    .StartAt(startAt)
+            //    .EndAt(endAt)
+            //    .OnceAsync<CarStat>();
+
+            //Console.ReadLine();
+
             //var stream = File.Open(@"C:\Users\MingHan\TestPhoto\Compressed\" + image, FileMode.Open);
             var stream = File.Open(image, FileMode.Open);
             var task = new FirebaseStorage("park-e5cd7.appspot.com")
@@ -416,7 +436,42 @@ namespace Test
             stat.carNumber = plate;
             stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
 
-            var firebase = new FirebaseClient("https://park-e5cd7.firebaseio.com/");
+            var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
+
+            IFirebaseConfig config = new FirebaseConfig
+            {
+                AuthSecret = "ZemocHanSTURNEFlPkGbjNZTI7JR3Do8WeApYwDI",
+                BasePath = "https://park-e5cd7.firebaseio.com/"
+            };
+
+            IFirebaseClient client = new FireSharp.FirebaseClient(config);
+            var token = new rate();
+
+            FirebaseResponse response = await client.GetAsync("car/"+plate);
+            token = response.ResultAs<rate>(); //The response will contain the data being retreived
+
+            //var ownerToken = await firebase
+            //    .Child(plate)
+            //    .Child("CMToken")
+            //    .OnceAsync<Car>();
+
+            if (token != null)
+            {
+                newCar.CMToken = token.CMToken;
+                SendPushNotification(token.CMToken);
+            }
+
+            //if (ownerToken.Count == 1)
+            //{
+            //    string deviceId = "";
+            //    foreach (var token in ownerToken)
+            //    {
+            //        deviceId = token.Object.CMToken;
+            //        newCar.CMToken = deviceId;
+            //    }
+            //    SendPushNotification(deviceId);
+            //} 
+
             await firebase
                 .Child("car")
                 .Child(newCar.CarNumber)
@@ -428,14 +483,23 @@ namespace Test
                 .Child("record")
                 .PostAsync(newCar);
 
-            await firebase
+            //long startAt = GetTimestamp(DateTime.Now);
+            //long endAt = GetTimestamp(DateTime.Now);
+
+            var statCar = await firebase
                 .Child("statCar")
                 .PostAsync(stat);
+
         }
 
         private string RemoveSpecialCharacters(string str)
         {
             return Regex.Replace(str, "[^a-zA-Z0-9]+", "", RegexOptions.Compiled);
+        }
+
+        public Int64 GetTimestamp(DateTime value)
+        {
+            return Convert.ToInt64(value.ToString("yyyyMMddHHmmssffff"));
         }
 
         public class ImageToTextInterpreter
@@ -464,6 +528,62 @@ namespace Test
                 components.Dispose();
              }
              base.Dispose(disposing);
+        }
+
+        public void SendPushNotification(string deviceId)
+        {
+            try
+            {
+
+                string applicationID = "AAAAwkPRZh0:APA91bEEtEi0CnQ9qoDlFm6n4KgTt7NXbWMLJ3XLWAt_ZR2kvvKogQfNecE2wT9-bY2FfIlKVap74yn4jq0BwWYNkgfpQd8N1AUTo2PHjBWxtuL2VRoDXM8RaNA3zWobRT-x7PIMklv4";
+
+                string senderId = "834361452061";
+
+                //string deviceId = "fFTds19dqH8:APA91bGgmxIH3P_Y5np3RY-lSz71nwJ0aOgty0iyrj3p3pUI1F9q6z6iVd8FxRQu6faVd5ws7Vw7OaibvkNA1qaZZAKumlvy1Kb-lYmuowEHQGP0XiYLcEXqpdfhX-XZ3SQ_-dNeGorc";
+
+                WebRequest tRequest= WebRequest.Create("https://fcm.googleapis.com/fcm/send");
+
+                tRequest.Method = "post";
+                tRequest.ContentType = "application/json";
+                var data = new
+                {
+                    to = deviceId,
+                    notification = new
+                    {
+                        body = "You have just parked your car on " + DateTime.Now.ToString("HH:mm:ss") +" today.",
+                        title = "Notification from VPS",
+                        sound = "Enabled",
+                        icon = "ic_local_parking_black_24dp"
+                    }
+                };
+                
+                var json = JsonConvert.SerializeObject(data);
+                Byte[] byteArray = Encoding.UTF8.GetBytes(json);
+                tRequest.Headers.Add(string.Format("Authorization: key={0}", applicationID));
+                tRequest.Headers.Add(string.Format("Sender: id={0}", senderId));
+                tRequest.ContentLength = byteArray.Length;
+                using (Stream dataStream = tRequest.GetRequestStream())
+                {
+                    dataStream.Write(byteArray, 0, byteArray.Length);
+                    using (WebResponse tResponse = tRequest.GetResponse())
+                    {
+                        using (Stream dataStreamResponse = tResponse.GetResponseStream())
+                        {
+                            using (StreamReader tReader = new StreamReader(dataStreamResponse))
+                            {
+                                String sResponseFromServer = tReader.ReadToEnd();
+                                string str = sResponseFromServer;
+                                Console.WriteLine(str);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string str = ex.Message;
+                Console.WriteLine(str);
+            }
         }
     }
 }
