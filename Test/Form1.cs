@@ -20,7 +20,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Firebase.Storage;
 using Emgu.CV.VideoSurveillance;
-using System.Drawing.Imaging;
 using System.Drawing;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Vision.v1;
@@ -31,7 +30,6 @@ using System.Net;
 using Newtonsoft.Json;
 using FireSharp.Config;
 using FireSharp.Interfaces;
-using FireSharp;
 using FireSharp.Response;
 
 namespace Test
@@ -47,6 +45,7 @@ namespace Test
         bool found = false;
         GoogleCredential credentails;
         VisionService service;
+        private string mall = "" ;
 
         OpenFileDialog openFileDialog = new OpenFileDialog();
 
@@ -80,8 +79,18 @@ namespace Test
                 _capture.SetCaptureProperty(CapProp.FrameWidth, 650);
                 _capture.SetCaptureProperty(CapProp.FrameHeight, 480);
                 _capture.SetCaptureProperty(CapProp.Fps, 30);
-                _capture.Start();
             }
+
+            var lines = File.ReadLines(@"C:\Users\MingHan\Desktop\mall.txt");
+            foreach(var line in lines)
+            {
+                comboBox1.Items.Add(line);
+            }
+
+            //comboBox1.Items.Add("Sunway Velocity Mall");
+            //comboBox1.Items.Add("MyTown Mall");
+            //comboBox1.Items.Add("Sunway Pyramid");
+            //comboBox1.Items.Add("IKEA Damansara");
 
             //string deviceId = "fFTds19dqH8:APA91bGgmxIH3P_Y5np3RY-lSz71nwJ0aOgty0iyrj3p3pUI1F9q6z6iVd8FxRQu6faVd5ws7Vw7OaibvkNA1qaZZAKumlvy1Kb-lYmuowEHQGP0XiYLcEXqpdfhX-XZ3SQ_-dNeGorc";
             //SendPushNotification(deviceId);
@@ -105,9 +114,7 @@ namespace Test
 
             double[] minValues, maxValues;
             Point[] minLoc, maxLoc;
-            Mat motionMask = new Mat();
-
-            _motionHistory.Mask.MinMax(out minValues, out maxValues, out minLoc, out maxLoc);
+            Mat motionMask = new Mat();            _motionHistory.Mask.MinMax(out minValues, out maxValues, out minLoc, out maxLoc);
             using (ScalarArray sa = new ScalarArray(255.0 / maxValues[0]))
                 CvInvoke.Multiply(_motionHistory.Mask, sa, motionMask, 1, DepthType.Cv8U);
 
@@ -225,102 +232,6 @@ namespace Test
             return null;
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Mat gray = new Mat();
-            Mat canny = new Mat();
-
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                //textBox1.Text = openFileDialog.FileName;
-                //Mat m = new Mat(openFileDialog.FileName);
-                //UMat um = m.GetUMat(AccessType.ReadWrite);
-                //imageBox1.Image = um;
-
-                //CvInvoke.CvtColor(um, gray, ColorConversion.Bgr2Gray);
-                //CvInvoke.PyrDown(gray, gray);
-                //imageBox2.Image = gray;
-
-                Mat img;
-                try
-                {
-                    img = CvInvoke.Imread(openFileDialog.FileName);
-                }
-                catch
-                {
-                    MessageBox.Show(String.Format("Invalide File: {0}", openFileDialog.FileName));
-                    return;
-                }
-                Mat down = new Mat();
-                CvInvoke.PyrDown(img, down);
-                CvInvoke.PyrDown(down, down);
-                CvInvoke.PyrUp(down, down);
-                UMat uImg = down.GetUMat(AccessType.ReadWrite);
-                down.Save(@"C:\Users\MingHan\TestPhoto\Compressed\" + openFileDialog.SafeFileName);
-                imageBox1.Image = uImg;
-                Thread workerThread = new Thread(()=> ProcessImageAsync(openFileDialog.SafeFileName));
-                workerThread.IsBackground = true;
-                workerThread.Start();
-               
-                 //ProcessImageAsync(openFileDialog.SafeFileName);
-            }
-        }
-
-        //private void ProcessImageAsync(IInputOutputArray image)
-        private void ProcessImageAsync(string @image)
-        {
-            Stopwatch watch = Stopwatch.StartNew(); // time the detection process
-            Task.Run(async () =>
-            {
-                var cognitiveService = new ImageToTextInterpreter
-                {
-                    ImageFilePath = image,
-                    //SubscriptionKey = "31f7ce7f00d94f478b1bfcf192b6cfbd"
-                    SubscriptionKey = "59b7a03e08ed4126809dd2d087e4fd81"
-                };
-
-                var results = await cognitiveService.ConvertImageToStreamAndExtractText();
-                watch.Stop();
-                Console.WriteLine(String.Format("License Plate Recognition time: {0} milli-seconds", watch.Elapsed.TotalMilliseconds));
-                //OutputToConsole(results, @image, watch);
-            }).Wait();
-
-            //Stopwatch watch = Stopwatch.StartNew(); // time the detection process
-
-            //List<IInputOutputArray> licensePlateImagesList = new List<IInputOutputArray>();
-            //List<IInputOutputArray> filteredLicensePlateImagesList = new List<IInputOutputArray>();
-            //List<RotatedRect> licenseBoxList = new List<RotatedRect>();
-            //List<string> words = _licensePlateDetector.DetectLicensePlate(
-            //   image,
-            //   licensePlateImagesList,
-            //   filteredLicensePlateImagesList,
-            //   licenseBoxList);
-
-            //watch.Stop(); //stop the timer
-            //label1.Text = String.Format("License Plate Recognition time: {0} milli-seconds", watch.Elapsed.TotalMilliseconds);
-
-            //panel1.Controls.Clear();
-            //Point startPoint = new Point(10, 10);
-            //String licensePlateNumber = "";
-            //for (int i = 0; i < words.Count; i++)
-            //{
-            //    Mat dest = new Mat();
-            //    CvInvoke.VConcat(licensePlateImagesList[i], filteredLicensePlateImagesList[i], dest);
-            //    AddLabelAndImage(
-            //       ref startPoint,
-            //       String.Format("License: {0}", words[i]),
-            //       dest);
-            //    licensePlateNumber += words[i];
-            //    PointF[] verticesF = licenseBoxList[i].GetVertices();
-            //    Point[] vertices = Array.ConvertAll(verticesF, Point.Round);
-            //    using (VectorOfPoint pts = new VectorOfPoint(vertices))
-            //        CvInvoke.Polylines(image, pts, true, new Bgr(System.Drawing.Color.Blue).MCvScalar, 2);
-            //    //System.Console.WriteLine(words[i]);
-            //}
-
-            //await StoreDBAsync(licensePlateNumber);
-        }
-
         //private void AddLabelAndImage(ref Point startPoint, String labelText, IImage image)
         private void AddLabelAndImage(ref Point startPoint, String labelText)
         {
@@ -363,7 +274,7 @@ namespace Test
             //        Console.WriteLine(string.Join(" ", line.Words.Select(w => w.Text)));
             //    }
             //}
-            MatchCollection mc = Regex.Matches(words.ToString(), @"([JKKDMNCPARBTSQVWL]){1}\w{0,}\s{0,1}\d{1,4}([A-Za-z])?");
+            MatchCollection mc = Regex.Matches(words.ToString(), @"([1]){0,1}([JKKDMNCPARBTSQVWL]){1}\w{0,}\s{0,1}\d{1,4}([A-Za-z])?");
 
             bool match = false;
             foreach (Match m in mc)
@@ -431,6 +342,7 @@ namespace Test
             newCar.LastEnterTime = DateTime.Now.ToString("HH:mm:ss");
             newCar.LastEnterDate = DateTime.Now.ToString("dd/MM/yyyy");
             newCar.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+            newCar.CarLocation = mall;
 
             Stat stat = new Stat();
             stat.carNumber = plate;
@@ -550,7 +462,7 @@ namespace Test
                     to = deviceId,
                     notification = new
                     {
-                        body = "You have just parked your car on " + DateTime.Now.ToString("HH:mm:ss") +" today.",
+                        body = "You car has just entered " + mall + " on " + DateTime.Now.ToString("HH:mm:ss") +" today.",
                         title = "Notification from VPS",
                         sound = "Enabled",
                         icon = "ic_local_parking_black_24dp"
@@ -584,6 +496,27 @@ namespace Test
                 string str = ex.Message;
                 Console.WriteLine(str);
             }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (comboBox1.GetItemText(comboBox1.SelectedItem) != "")
+            {
+                MessageBox.Show(comboBox1.GetItemText(comboBox1.SelectedItem));
+                mall = comboBox1.GetItemText(comboBox1.SelectedItem);
+                _capture.Start();
+                comboBox1.Enabled = false;
+            }
+            else
+            {
+                MessageBox.Show("Please select a mall from the combobox!");
+            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            comboBox1.Enabled = true;
+            _capture.Stop();
         }
     }
 }

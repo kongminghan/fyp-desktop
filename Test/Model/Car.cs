@@ -14,6 +14,7 @@ namespace Test.Model
         public string LastEnterTime { get; set; }
         public string Status { get; set; }
         public string CMToken { get; set; }
+        public string CarLocation { get; set; }
         public Dictionary<string, object> timestamp { get; set;  }
 
         public Car() { }
