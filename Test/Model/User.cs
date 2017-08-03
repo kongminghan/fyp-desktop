@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Test.Model
 {
-    class CarStat
+    class User
     {
-        public string carPlate { get; set; }
-        public Dictionary<string, object> timestamp { get; set; }
+        public string password { get; set; }
+        public ParkingRate rate { get; set; }
     }
 }

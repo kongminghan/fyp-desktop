@@ -46,6 +46,8 @@ namespace Test
         GoogleCredential credentails;
         VisionService service;
         private string mall = "" ;
+        private int count = 0;
+        private string key;
 
         OpenFileDialog openFileDialog = new OpenFileDialog();
 
@@ -81,11 +83,7 @@ namespace Test
                 _capture.SetCaptureProperty(CapProp.Fps, 30);
             }
 
-            var lines = File.ReadLines(@"C:\Users\MingHan\Desktop\mall.txt");
-            foreach(var line in lines)
-            {
-                comboBox1.Items.Add(line);
-            }
+            PutInitialAsync();
 
             //comboBox1.Items.Add("Sunway Velocity Mall");
             //comboBox1.Items.Add("MyTown Mall");
@@ -95,6 +93,20 @@ namespace Test
             //string deviceId = "fFTds19dqH8:APA91bGgmxIH3P_Y5np3RY-lSz71nwJ0aOgty0iyrj3p3pUI1F9q6z6iVd8FxRQu6faVd5ws7Vw7OaibvkNA1qaZZAKumlvy1Kb-lYmuowEHQGP0XiYLcEXqpdfhX-XZ3SQ_-dNeGorc";
             //SendPushNotification(deviceId);
             //StoreDBAsync("", "");
+        }
+
+        private async void PutInitialAsync()
+        {
+            var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
+
+            var mallList = await firebase
+              .Child("user")
+              .OnceAsync<User>();
+
+            foreach (var list in mallList)
+            {
+                comboBox1.Items.Add(list.Key);
+            }
         }
 
         private Mat _segMask = new Mat();
@@ -114,7 +126,8 @@ namespace Test
 
             double[] minValues, maxValues;
             Point[] minLoc, maxLoc;
-            Mat motionMask = new Mat();            _motionHistory.Mask.MinMax(out minValues, out maxValues, out minLoc, out maxLoc);
+            Mat motionMask = new Mat();
+            _motionHistory.Mask.MinMax(out minValues, out maxValues, out minLoc, out maxLoc);
             using (ScalarArray sa = new ScalarArray(255.0 / maxValues[0]))
                 CvInvoke.Multiply(_motionHistory.Mask, sa, motionMask, 1, DepthType.Cv8U);
 
@@ -282,6 +295,7 @@ namespace Test
                 match = true;
                 ss = m.ToString();
             }
+
             Console.WriteLine("Regex: " + ss);
             //Console.ForegroundColor = ConsoleColor.White;
             //Console.ReadLine();
@@ -311,6 +325,8 @@ namespace Test
 
         private async void StoreDBAsync(string @image, string plate)
         {
+            count++;
+
             //Int64 startAt = GetTimestamp(DateTime.Today.AddDays(-1));
             //Int64 endAt = GetTimestamp(DateTime.Now);
 
@@ -326,14 +342,15 @@ namespace Test
             //Console.ReadLine();
 
             //var stream = File.Open(@"C:\Users\MingHan\TestPhoto\Compressed\" + image, FileMode.Open);
-            var stream = File.Open(image, FileMode.Open);
-            var task = new FirebaseStorage("park-e5cd7.appspot.com")
-                .Child("car")
-                .Child(image)
-                .PutAsync(stream);
+
+            //var stream = File.Open(image, FileMode.Open);
+            //var task = new FirebaseStorage("park-e5cd7.appspot.com")
+            //    .Child("car")
+            //    .Child(image)
+            //    .PutAsync(stream);
 
             //task.Progress.ProgressChanged += (s, e) => Console.WriteLine($"Progress: {e.Percentage} %");
-            var downloadUrl = await task;
+            //var downloadUrl = await task;
 
             plate = RemoveSpecialCharacters(plate);
 
@@ -344,9 +361,9 @@ namespace Test
             newCar.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
             newCar.CarLocation = mall;
 
-            Stat stat = new Stat();
-            stat.carNumber = plate;
-            stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+            //CarStat carStat = new CarStat();
+            //carStat.carPlate = plate;
+            //carStat.timestamp = new Dictionary < string, object> { { ".sv", "timestamp" } };
 
             var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
 
@@ -395,13 +412,40 @@ namespace Test
                 .Child("record")
                 .PostAsync(newCar);
 
-            //long startAt = GetTimestamp(DateTime.Now);
-            //long endAt = GetTimestamp(DateTime.Now);
-
             var statCar = await firebase
-                .Child("statCar")
-                .PostAsync(stat);
+                .Child("mall")
+                .Child(mall)
+                .PostAsync(newCar);
 
+            if (DateTime.Now.Minute % 15 == 0)
+            {
+                Stat stat = new Stat();
+                stat.count = 1;
+                //stat.carNumber = plate;
+                //stat.LastEnterTime = newCar.LastEnterTime;
+                //stat.LastEnterDate = newCar.LastEnterDate;
+                stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+
+                var usage = await firebase
+                    .Child("usage")
+                    .Child(mall)
+                    .PostAsync(stat);
+
+                key = usage.Key;
+                count = 0;
+            }
+            else
+            {
+                Stat stat = new Stat();
+                stat.count = count;
+                stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+
+                await firebase
+                    .Child("usage")
+                    .Child(mall)
+                    .Child(key)
+                    .PutAsync(stat);
+            }
         }
 
         private string RemoveSpecialCharacters(string str)
@@ -498,7 +542,7 @@ namespace Test
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private async void button2_ClickAsync(object sender, EventArgs e)
         {
             if (comboBox1.GetItemText(comboBox1.SelectedItem) != "")
             {
@@ -506,6 +550,23 @@ namespace Test
                 mall = comboBox1.GetItemText(comboBox1.SelectedItem);
                 _capture.Start();
                 comboBox1.Enabled = false;
+
+                Stat stat = new Stat();
+                stat.count = 0;
+                //stat.carNumber = plate;
+                //stat.LastEnterTime = newCar.LastEnterTime;
+                //stat.LastEnterDate = newCar.LastEnterDate;
+                stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+
+                var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
+
+                var usage = await firebase
+                    .Child("usage")
+                    .Child(mall)
+                    .PostAsync(stat);
+
+                key = usage.Key;
+
             }
             else
             {
@@ -517,6 +578,7 @@ namespace Test
         {
             comboBox1.Enabled = true;
             _capture.Stop();
+            _capture.Dispose();
         }
     }
 }

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Test.Model
 {
-    class CarStat
+    class ParkingRate
     {
-        public string carPlate { get; set; }
-        public Dictionary<string, object> timestamp { get; set; }
+        public double firstHour { get; set; }
+        public double nextHour { get; set; }
     }
 }
