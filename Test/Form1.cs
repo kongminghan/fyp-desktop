@@ -48,6 +48,7 @@ namespace Test
         private string mall = "" ;
         private int count = 0;
         private string key;
+        private List<string> passList = new List<string>();
 
         OpenFileDialog openFileDialog = new OpenFileDialog();
 
@@ -106,6 +107,7 @@ namespace Test
             foreach (var list in mallList)
             {
                 comboBox1.Items.Add(list.Key);
+                passList.Add(list.Object.password);
             }
         }
 
@@ -546,27 +548,42 @@ namespace Test
         {
             if (comboBox1.GetItemText(comboBox1.SelectedItem) != "")
             {
-                MessageBox.Show(comboBox1.GetItemText(comboBox1.SelectedItem));
+                //MessageBox.Show(comboBox1.GetItemText(comboBox1.SelectedItem));
                 mall = comboBox1.GetItemText(comboBox1.SelectedItem);
-                _capture.Start();
-                comboBox1.Enabled = false;
-
-                Stat stat = new Stat();
-                stat.count = 0;
-                //stat.carNumber = plate;
-                //stat.LastEnterTime = newCar.LastEnterTime;
-                //stat.LastEnterDate = newCar.LastEnterDate;
-                stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
-
                 var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
 
-                var usage = await firebase
-                    .Child("usage")
-                    .Child(mall)
-                    .PostAsync(stat);
+                if (textBox1.Text.Length > 0)
+                {
+                    if(textBox1.Text == passList[comboBox1.SelectedIndex])
+                    {
+                        _capture.Start();
+                        comboBox1.Enabled = false;
 
-                key = usage.Key;
+                        Stat stat = new Stat();
+                        stat.count = 0;
+                        //stat.carNumber = plate;
+                        //stat.LastEnterTime = newCar.LastEnterTime;
+                        //stat.LastEnterDate = newCar.LastEnterDate;
+                        stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
 
+
+
+                        var usage = await firebase
+                            .Child("usage")
+                            .Child(mall)
+                            .PostAsync(stat);
+
+                        key = usage.Key;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Wrong password! Please contact your manager.");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Please enter password!");
+                }
             }
             else
             {
