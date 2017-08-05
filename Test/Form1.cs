@@ -31,6 +31,7 @@ using Newtonsoft.Json;
 using FireSharp.Config;
 using FireSharp.Interfaces;
 using FireSharp.Response;
+using System.Timers;
 
 namespace Test
 {
@@ -85,6 +86,10 @@ namespace Test
             }
 
             PutInitialAsync();
+            System.Timers.Timer aTimer = new System.Timers.Timer();
+            aTimer.Elapsed += new ElapsedEventHandler(OnTimedEventAsync);
+            aTimer.Interval = 900000;
+            aTimer.Enabled = true;
 
             //comboBox1.Items.Add("Sunway Velocity Mall");
             //comboBox1.Items.Add("MyTown Mall");
@@ -327,7 +332,7 @@ namespace Test
 
         private async void StoreDBAsync(string @image, string plate)
         {
-            count++;
+            ++count;
 
             //Int64 startAt = GetTimestamp(DateTime.Today.AddDays(-1));
             //Int64 endAt = GetTimestamp(DateTime.Now);
@@ -419,35 +424,45 @@ namespace Test
                 .Child(mall)
                 .PostAsync(newCar);
 
-            if (DateTime.Now.Minute % 15 == 0)
-            {
-                Stat stat = new Stat();
-                stat.count = 1;
-                //stat.carNumber = plate;
-                //stat.LastEnterTime = newCar.LastEnterTime;
-                //stat.LastEnterDate = newCar.LastEnterDate;
-                stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+            Stat stat = new Stat();
+            stat.count = count;
+            stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
 
-                var usage = await firebase
-                    .Child("usage")
-                    .Child(mall)
-                    .PostAsync(stat);
+            await firebase
+                .Child("usage")
+                .Child(mall)
+                .Child(key)
+                .PutAsync(stat);
 
-                key = usage.Key;
-                count = 0;
-            }
-            else
-            {
-                Stat stat = new Stat();
-                stat.count = count;
-                stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+            //if (DateTime.Now.Minute % 15 == 0)
+            //{
+            //    Stat stat = new Stat();
+            //    stat.count = 1;
+            //    //stat.carNumber = plate;
+            //    //stat.LastEnterTime = newCar.LastEnterTime;
+            //    //stat.LastEnterDate = newCar.LastEnterDate;
+            //    stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
 
-                await firebase
-                    .Child("usage")
-                    .Child(mall)
-                    .Child(key)
-                    .PutAsync(stat);
-            }
+            //    var usage = await firebase
+            //        .Child("usage")
+            //        .Child(mall)
+            //        .PostAsync(stat);
+
+            //    key = usage.Key;
+            //    count = 0;
+            //}
+            //else
+            //{
+            //    Stat stat = new Stat();
+            //    stat.count = count;
+            //    stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+
+            //    await firebase
+            //        .Child("usage")
+            //        .Child(mall)
+            //        .Child(key)
+            //        .PutAsync(stat);
+            //}
         }
 
         private string RemoveSpecialCharacters(string str)
@@ -554,19 +569,14 @@ namespace Test
 
                 if (textBox1.Text.Length > 0)
                 {
-                    if(textBox1.Text == passList[comboBox1.SelectedIndex])
+                    if (textBox1.Text == passList[comboBox1.SelectedIndex])
                     {
                         _capture.Start();
                         comboBox1.Enabled = false;
 
                         Stat stat = new Stat();
                         stat.count = 0;
-                        //stat.carNumber = plate;
-                        //stat.LastEnterTime = newCar.LastEnterTime;
-                        //stat.LastEnterDate = newCar.LastEnterDate;
                         stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
-
-
 
                         var usage = await firebase
                             .Child("usage")
@@ -596,6 +606,24 @@ namespace Test
             comboBox1.Enabled = true;
             _capture.Stop();
             _capture.Dispose();
+        }
+
+        private async void OnTimedEventAsync(object source, ElapsedEventArgs e)
+        {
+            Stat stat = new Stat();
+            stat.count = 0;
+            //stat.carNumber = plate;
+            //stat.LastEnterTime = newCar.LastEnterTime;
+            //stat.LastEnterDate = newCar.LastEnterDate;
+            stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
+            var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
+            var usage = await firebase
+                .Child("usage")
+                .Child(mall)
+                .PostAsync(stat);
+
+            key = usage.Key;
+            count = 0;
         }
     }
 }
