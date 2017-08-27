@@ -188,6 +188,11 @@ namespace Test
                 {
                     OutputToConsole(result, filename, watch);
                 }
+                //File.Delete(filename);
+                Task.Run(() =>
+                {
+                    File.Delete(filename);
+                });
             }
         }
 
@@ -605,7 +610,7 @@ namespace Test
         {
             comboBox1.Enabled = true;
             _capture.Stop();
-            _capture.Dispose();
+            //_capture.Dispose();
         }
 
         private async void OnTimedEventAsync(object source, ElapsedEventArgs e)
