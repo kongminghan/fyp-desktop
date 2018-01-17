@@ -37,38 +37,6 @@ namespace Test
             _ocr.SetVariable("tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
         }
 
-        /*
-        /// <summary>
-        /// Compute the white pixel mask for the given image. 
-        /// A white pixel is a pixel where:  saturation &lt; 40 AND value &gt; 200
-        /// </summary>
-        /// <param name="image">The color image to find white mask from</param>
-        /// <returns>The white pixel mask</returns>
-        private static Image<Gray, Byte> GetWhitePixelMask(Image<Bgr, byte> image)
-        {
-           using (Image<Hsv, Byte> hsv = image.Convert<Hsv, Byte>())
-           {
-              Image<Gray, Byte>[] channels = hsv.Split();
-
-              try
-              {
-                 //channels[1] is the mask for satuation less than 40, this is the mask for either white or black pixels
-                 channels[1]._ThresholdBinaryInv(new Gray(40), new Gray(255));
-
-                 //channels[2] is the mask for bright pixels
-                 channels[2]._ThresholdBinary(new Gray(200), new Gray(255));
-
-                 CvInvoke.BitwiseAnd(channels[1], channels[2], channels[0], null);
-              }
-              finally
-              {
-                 channels[1].Dispose();
-                 channels[2].Dispose();
-              }
-              return channels[0];
-           }
-        }*/
-
         /// <summary>
         /// Detect license plate from the given image
         /// </summary>
@@ -91,45 +59,10 @@ namespace Test
             using (Mat canny = new Mat())
             using (VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint())
             {
-                //var newImage;
-                //for (int y = 0; y < gray.Rows; y++)
-                //{
-                //    for (int x = 0; x < gray.Cols; x++)
-                //    {
-                //        MCvScalar orig = gray.Data[y, x].MCvScalar;
-                //        var v0 = alpha * orig.v0 + beta;
-                //        var v1 = alpha * orig.v1 + beta;
-                //        var v2 = alpha * orig.v2 + beta;
-                //        var v3 = alpha * orig.v3 + beta;
-                //        var newCol = new Bgr();
-                //        newCol.MCvScalar = new MCvScalar(v0, v1, v2, v3);
-                //        newImage[y, x] = newCol;
-                //    }
-                //}
                 CvInvoke.CvtColor(img, gray, ColorConversion.Bgr2Gray);
                 CvInvoke.PyrDown(gray, _smallGrayFrame);
                 CvInvoke.PyrUp(_smallGrayFrame, _smoothedGrayFrame);
-                //CvInvoke.BitwiseNot(_smoothedGrayFrame, _smoothedGrayFrame);
-                //CvInvoke.Canny(_smoothedGrayFrame, canny, 100, 20, 3, false);
-                //CvInvoke.GaussianBlur(_smoothedGrayFrame, _smoothedGrayFrame, new Size(5,5), 0, 0, BorderType.Reflect101);
-                //CvInvoke.AdaptiveThreshold(gray, _smoothedGrayFrame, 150, AdaptiveThresholdType.MeanC, ThresholdType.Binary, 25, 5);
-                //CvInvoke.PyrDown(_smoothedGrayFrame, _smoothedGrayFrame);
-                //CvInvoke.PyrUp(_smoothedGrayFrame, _smoothedGrayFrame);
-                //CvInvoke.EqualizeHist(_smoothedGrayFrame, _smoothedGrayFrame);
                 CvInvoke.Canny(_smoothedGrayFrame, canny, 100, 35, 3, false);
-                //Tesseract.Character[] words;
-                //StringBuilder strBuilder = new StringBuilder();
-                //using (UMat tmp = _smoothedGrayFrame.GetUMat(AccessType.ReadWrite).Clone())
-                //{
-                //    _ocr.Recognize(tmp);
-                //    words = _ocr.GetCharacters();
-
-                //    for (int i = 0; i < words.Length; i++)
-                //    {
-                //        strBuilder.Append(words[i].Text);
-                //    }
-                //    Console.WriteLine(strBuilder.ToString());
-                //}
 
                 int[,] hierachy = CvInvoke.FindContourTree(canny, contours, ChainApproxMethod.ChainApproxSimple);
                 FindLicensePlate(contours, hierachy, 0, gray, canny, licensePlateImagesList, filteredLicensePlateImagesList, detectedLicensePlateRegionList, licenses);
