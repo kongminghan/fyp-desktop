@@ -90,15 +90,6 @@ namespace Test
             aTimer.Elapsed += new ElapsedEventHandler(OnTimedEventAsync);
             aTimer.Interval = 900000;
             aTimer.Enabled = true;
-
-            //comboBox1.Items.Add("Sunway Velocity Mall");
-            //comboBox1.Items.Add("MyTown Mall");
-            //comboBox1.Items.Add("Sunway Pyramid");
-            //comboBox1.Items.Add("IKEA Damansara");
-
-            //string deviceId = "fFTds19dqH8:APA91bGgmxIH3P_Y5np3RY-lSz71nwJ0aOgty0iyrj3p3pUI1F9q6z6iVd8FxRQu6faVd5ws7Vw7OaibvkNA1qaZZAKumlvy1Kb-lYmuowEHQGP0XiYLcEXqpdfhX-XZ3SQ_-dNeGorc";
-            //SendPushNotification(deviceId);
-            //StoreDBAsync("", "");
         }
 
         private async void PutInitialAsync()
@@ -267,20 +258,11 @@ namespace Test
             label.Height = 30;
             label.Location = startPoint;
             startPoint.Y += label.Height;
-
-            //ImageBox box = new ImageBox();
-            //panel1.Controls.Add(box);
-            //box.ClientSize = image.Size;
-            //box.Image = image;
-            //box.Location = startPoint;
-            //startPoint.Y += box.Height + 10;
         }
 
             //private void OutputToConsole(OcrResults results, string imageName, Stopwatch watch)
             private void OutputToConsole(AnnotateImageResponse responses, string imageName, Stopwatch watch)
             {
-            //Console.WriteLine("Interpreted text:");
-            //Console.ForegroundColor = ConsoleColor.Yellow;
             string ss = "";
             string words = "";
             var keywords = responses?.TextAnnotations?.Select(s => s.Description).ToArray();
@@ -289,16 +271,6 @@ namespace Test
                 words = String.Join(" ", keywords);
             }
 
-            //bool match = false;
-            //foreach (var region in results.Regions)
-            //{
-            //    Console.WriteLine(region.Lines.Length);
-            //    foreach (var line in region.Lines)
-            //    {
-            //        s = s + " " + string.Join(" ", line.Words.Select(w => w.Text));
-            //        Console.WriteLine(string.Join(" ", line.Words.Select(w => w.Text)));
-            //    }
-            //}
             MatchCollection mc = Regex.Matches(words.ToString(), @"([1]){0,1}([JKKDMNCPARBTSQVWL]){1}\w{0,}\s{0,1}\d{1,4}([A-Za-z])?");
 
             bool match = false;
@@ -326,44 +298,11 @@ namespace Test
                 ready = true;
                 //_capture.Start();
             });
-            //if (IsHandleCreated)
-            //    this.CreateControl();
-            //Control control = new Control();
-            //control.Invoke(new Action(() => label2.Text = s));
-            //label2.Text = s;
-            //Point startPoint = new Point(10, 10);
-            //AddLabelAndImage(ref startPoint,String.Format("License: {0}", s));
         }
 
         private async void StoreDBAsync(string @image, string plate)
         {
             ++count;
-
-            //Int64 startAt = GetTimestamp(DateTime.Today.AddDays(-1));
-            //Int64 endAt = GetTimestamp(DateTime.Now);
-
-            //var firebase = new FirebaseClient("https://park-e5cd7.firebaseio.com/");
-
-            //var statCar = await firebase
-            //    .Child("statCar")
-            //    .OrderBy("timestamp")
-            //    .StartAt(startAt)
-            //    .EndAt(endAt)
-            //    .OnceAsync<CarStat>();
-
-            //Console.ReadLine();
-
-            //var stream = File.Open(@"C:\Users\MingHan\TestPhoto\Compressed\" + image, FileMode.Open);
-
-            //var stream = File.Open(image, FileMode.Open);
-            //var task = new FirebaseStorage("park-e5cd7.appspot.com")
-            //    .Child("car")
-            //    .Child(image)
-            //    .PutAsync(stream);
-
-            //task.Progress.ProgressChanged += (s, e) => Console.WriteLine($"Progress: {e.Percentage} %");
-            //var downloadUrl = await task;
-
             plate = RemoveSpecialCharacters(plate);
 
             Car newCar = new Car();
@@ -373,15 +312,11 @@ namespace Test
             newCar.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
             newCar.CarLocation = mall;
 
-            //CarStat carStat = new CarStat();
-            //carStat.carPlate = plate;
-            //carStat.timestamp = new Dictionary < string, object> { { ".sv", "timestamp" } };
-
             var firebase = new Firebase.Database.FirebaseClient("https://park-e5cd7.firebaseio.com/");
 
             IFirebaseConfig config = new FirebaseConfig
             {
-                AuthSecret = "ZemocHanSTURNEFlPkGbjNZTI7JR3Do8WeApYwDI",
+                AuthSecret = AUTH_SECRET,
                 BasePath = "https://park-e5cd7.firebaseio.com/"
             };
 
@@ -391,27 +326,11 @@ namespace Test
             FirebaseResponse response = await client.GetAsync("car/"+plate);
             token = response.ResultAs<rate>(); //The response will contain the data being retreived
 
-            //var ownerToken = await firebase
-            //    .Child(plate)
-            //    .Child("CMToken")
-            //    .OnceAsync<Car>();
-
             if (token != null)
             {
                 newCar.CMToken = token.CMToken;
                 SendPushNotification(token.CMToken);
             }
-
-            //if (ownerToken.Count == 1)
-            //{
-            //    string deviceId = "";
-            //    foreach (var token in ownerToken)
-            //    {
-            //        deviceId = token.Object.CMToken;
-            //        newCar.CMToken = deviceId;
-            //    }
-            //    SendPushNotification(deviceId);
-            //} 
 
             await firebase
                 .Child("car")
@@ -438,36 +357,6 @@ namespace Test
                 .Child(mall)
                 .Child(key)
                 .PutAsync(stat);
-
-            //if (DateTime.Now.Minute % 15 == 0)
-            //{
-            //    Stat stat = new Stat();
-            //    stat.count = 1;
-            //    //stat.carNumber = plate;
-            //    //stat.LastEnterTime = newCar.LastEnterTime;
-            //    //stat.LastEnterDate = newCar.LastEnterDate;
-            //    stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
-
-            //    var usage = await firebase
-            //        .Child("usage")
-            //        .Child(mall)
-            //        .PostAsync(stat);
-
-            //    key = usage.Key;
-            //    count = 0;
-            //}
-            //else
-            //{
-            //    Stat stat = new Stat();
-            //    stat.count = count;
-            //    stat.timestamp = new Dictionary<string, object> { { ".sv", "timestamp" } };
-
-            //    await firebase
-            //        .Child("usage")
-            //        .Child(mall)
-            //        .Child(key)
-            //        .PutAsync(stat);
-            //}
         }
 
         private string RemoveSpecialCharacters(string str)
@@ -516,8 +405,6 @@ namespace Test
                 string applicationID = "AAAAwkPRZh0:APA91bEEtEi0CnQ9qoDlFm6n4KgTt7NXbWMLJ3XLWAt_ZR2kvvKogQfNecE2wT9-bY2FfIlKVap74yn4jq0BwWYNkgfpQd8N1AUTo2PHjBWxtuL2VRoDXM8RaNA3zWobRT-x7PIMklv4";
 
                 string senderId = "834361452061";
-
-                //string deviceId = "fFTds19dqH8:APA91bGgmxIH3P_Y5np3RY-lSz71nwJ0aOgty0iyrj3p3pUI1F9q6z6iVd8FxRQu6faVd5ws7Vw7OaibvkNA1qaZZAKumlvy1Kb-lYmuowEHQGP0XiYLcEXqpdfhX-XZ3SQ_-dNeGorc";
 
                 WebRequest tRequest= WebRequest.Create("https://fcm.googleapis.com/fcm/send");
 
